@@ -14348,8 +14348,11 @@ fn include_text(server: &lsp::LanguageServer) -> Option<bool> {
                 Some(save_options.include_text.unwrap_or(false))
             }
         },
-        // We do not have any save info. Kind affects didChange only.
-        lsp::TextDocumentSyncCapability::Kind(_) => None,
+        // Kind is a shorthand for Options. Per the LSP spec and the VS Code
+        // reference client, non-None kinds imply save notifications without text.
+        lsp::TextDocumentSyncCapability::Kind(kind) => {
+            (*kind != lsp::TextDocumentSyncKind::NONE).then_some(false)
+        }
     }
 }
 

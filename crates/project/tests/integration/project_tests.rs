@@ -1928,6 +1928,65 @@ async fn test_managing_language_servers(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
+async fn test_did_save_with_text_document_sync_kind(cx: &mut gpui::TestAppContext) {
+    init_test(cx);
+
+    let fs = FakeFs::new(cx.executor());
+    fs.insert_tree(
+        path!("/dir"),
+        json!({
+            "test.rs": "const A: i32 = 1;",
+        }),
+    )
+    .await;
+
+    let project = Project::test(fs.clone(), [path!("/dir").as_ref()], cx).await;
+    let language_registry = project.read_with(cx, |project, _| project.languages().clone());
+
+    let mut fake_servers = language_registry.register_fake_lsp(
+        "Rust",
+        FakeLspAdapter {
+            name: "the-rust-language-server",
+            capabilities: lsp::ServerCapabilities {
+                text_document_sync: Some(lsp::TextDocumentSyncCapability::Kind(
+                    lsp::TextDocumentSyncKind::FULL,
+                )),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    );
+
+    language_registry.add(rust_lang());
+    let (buffer, _handle) = project
+        .update(cx, |project, cx| {
+            project.open_local_buffer_with_lsp(path!("/dir/test.rs"), cx)
+        })
+        .await
+        .unwrap();
+
+    let mut fake_server = fake_servers.next().await.unwrap();
+    fake_server
+        .receive_notification::<lsp::notification::DidOpenTextDocument>()
+        .await;
+
+    project
+        .update(cx, |project, cx| project.save_buffer(buffer.clone(), cx))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        fake_server
+            .receive_notification::<lsp::notification::DidSaveTextDocument>()
+            .await
+            .text_document,
+        lsp::TextDocumentIdentifier::new(
+            lsp::Uri::from_file_path(path!("/dir/test.rs")).unwrap()
+        )
+    );
+}
+
+#[gpui::test]
 async fn test_language_server_relative_path(cx: &mut gpui::TestAppContext) {
     init_test(cx);
 
