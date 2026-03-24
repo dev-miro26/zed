@@ -108,6 +108,38 @@
       (shorthand_property_identifier_pattern)
     ]) @variable.parameter))
 
+(required_parameter
+  (_
+    (object_assignment_pattern
+      left: ([
+        (identifier)
+        (shorthand_property_identifier_pattern)
+      ]) @variable.parameter)))
+
+(required_parameter
+  (_
+    (assignment_pattern
+      left: ([
+        (identifier)
+        (shorthand_property_identifier_pattern)
+      ]) @variable.parameter)))
+
+(optional_parameter
+  (_
+    (object_assignment_pattern
+      left: ([
+        (identifier)
+        (shorthand_property_identifier_pattern)
+      ]) @variable.parameter)))
+
+(optional_parameter
+  (_
+    (assignment_pattern
+      left: ([
+        (identifier)
+        (shorthand_property_identifier_pattern)
+      ]) @variable.parameter)))
+
 (catch_clause
   parameter: (identifier) @variable.parameter)
 
